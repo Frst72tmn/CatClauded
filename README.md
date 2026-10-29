@@ -107,3 +107,7 @@ CatClauded.exe --print-hooks > hooks.json
 ```bash
 claude -p --permission-mode default --settings hooks.json "echo test > t.txt"
 ```
+
+## Лицензия
+
+MIT — см. [LICENSE](LICENSE).
