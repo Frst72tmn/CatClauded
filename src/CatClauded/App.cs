@@ -53,6 +53,8 @@ public sealed class App : Application
             await ConfirmWindow.InformAsync("CatClauded не принимает хуки", $"Не удалось открыть {problem}. Смените порт в настройках.");
         else if (!HookInstaller.IsInstalled(HookInstaller.SettingsPath))
             await InstallAsync(firstRun: true);
+        else if (HookInstaller.IsOutdated(HookInstaller.SettingsPath, HookInstaller.LocalHooks(Settings.Current.Port, Settings.Current.Token)))
+            await InstallAsync(outdated: true);
     }
 
     private void CreateTray(IClassicDesktopStyleApplicationLifetime desktop)
@@ -96,18 +98,20 @@ public sealed class App : Application
     }
 
     /// <summary>Записать хуки в ~/.claude/settings.json — только после подтверждения в окне.</summary>
-    public async Task InstallAsync(bool firstRun = false)
+    public async Task InstallAsync(bool firstRun = false, bool outdated = false)
     {
         var path = HookInstaller.SettingsPath;
         var how = OperatingSystem.IsWindows()
             ? $"HTTP-хуки на 127.0.0.1:{Settings.Current.Port}"
             : $"команды curl на 127.0.0.1:{Settings.Current.Port} (молчат, когда CatClauded закрыт)";
-        var text = (firstRun ? "Котики ещё не подключены к Claude Code.\n\n" : "")
+        var text = (firstRun ? "Котики ещё не подключены к Claude Code.\n\n"
+                : outdated ? "Хуки CatClauded в Claude Code устарели: их ставила прежняя версия или они смотрят на другой порт. "
+                    + "Без обновления часть возможностей не работает — например, щелчок по коту не откроет нужную сессию десктопа.\n\n" : "")
             + $"CatClauded добавит свои хуки ({how}) в файл:\n{path}\n\n"
             + (File.Exists(path) && !File.Exists(path + HookInstaller.BackupSuffix) ? $"Перед правкой будет сделана копия:\n{path}{HookInstaller.BackupSuffix}\n\n" : "")
             + "Ваши настройки и чужие хуки останутся как есть. Прежние хуки CatClauded заменятся новыми.\n"
             + "Хуки начнут работать в новых сессиях Claude Code (уже открытые нужно перезапустить).";
-        if (!await ConfirmWindow.AskAsync("Подключить к Claude Code?", text, "Подключить")) return;
+        if (!await ConfirmWindow.AskAsync(outdated ? "Обновить хуки CatClauded?" : "Подключить к Claude Code?", text, outdated ? "Обновить" : "Подключить")) return;
         try
         {
             var backup = HookInstaller.Write(path, HookInstaller.LocalHooks(Settings.Current.Port, Settings.Current.Token));

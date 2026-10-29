@@ -29,6 +29,24 @@ public static class HookInstaller
         catch (IOException) { return false; }
     }
 
+    /// <summary>
+    /// Наши хуки в settings.json есть, но не такие, как нужно сейчас (старая версия программы, другой порт или токен).
+    /// Сравниваем только группы с нашим маркером, по событиям; чужие хуки не смотрим.
+    /// </summary>
+    public static bool IsOutdated(string path, JsonObject expected)
+    {
+        try
+        {
+            if (!IsInstalled(path)) return false;
+            var root = JsonNode.Parse(File.ReadAllText(path), documentOptions: new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+            var hooks = root?["hooks"] as JsonObject;
+            string Ours(JsonNode? groups) => string.Join("\n", (groups as JsonArray ?? []).Select(g => g?.ToJsonString() ?? "").Where(g => g.Contains(Marker, StringComparison.Ordinal)));
+            var events = expected.Select(p => p.Key).Union(hooks?.Select(p => p.Key) ?? []);
+            return events.Any(e => Ours(hooks?[e]) != Ours(expected[e]));
+        }
+        catch (Exception e) when (e is IOException or JsonException) { return false; }
+    }
+
     /// <summary>Хуки для этого компьютера: Windows — HTTP, Linux и macOS — curl.</summary>
     public static JsonObject LocalHooks(int port, string token) =>
         OperatingSystem.IsWindows() ? HooksFor("windows", Environment.MachineName, port, token)

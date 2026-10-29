@@ -116,6 +116,26 @@ public class HookInstallerTests : IDisposable
     }
 
     [Fact]
+    public void DetectsOutdatedHooksOnly()
+    {
+        var path = Path.Combine(_dir, "settings.json");
+        Directory.CreateDirectory(_dir);
+        File.WriteAllText(path, """{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"say done"}]}]}}""");
+        var current = HookInstaller.HooksFor("windows", "PC", 47322, "t");
+        Assert.False(HookInstaller.IsOutdated(path, current)); // не подключено — это не «устарело»
+
+        HookInstaller.Write(path, current);
+        Assert.False(HookInstaller.IsOutdated(path, current));
+
+        // Хуки прежней версии: без заголовка с id сессии десктопа.
+        var old = HookInstaller.HooksFor("windows", "PC", 47322, "t");
+        foreach (var (_, groups) in old) groups![0]!["hooks"]![0]!["headers"]!.AsObject().Remove(Hook.DesktopSessionHeader);
+        HookInstaller.Write(path, old);
+        Assert.True(HookInstaller.IsOutdated(path, current));
+        Assert.True(HookInstaller.IsOutdated(path, HookInstaller.HooksFor("windows", "PC", 47399, "t")));
+    }
+
+    [Fact]
     public void WriteCreatesMissingSettings()
     {
         var path = Path.Combine(_dir, "new", "settings.json");
