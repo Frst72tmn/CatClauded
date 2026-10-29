@@ -162,6 +162,21 @@ public class ClaudeSessionsTests
     }
 
     [Fact]
+    public async Task DesktopSessionOpensByClaudeLink()
+    {
+        var s = new ClaudeSessions();
+        await s.HandleAsync(Call(Ev("SessionStart", session: "t")), TimeSpan.Zero, CancellationToken.None);
+        await s.HandleAsync(Call(Ev("SessionStart"), Desktop) with { DesktopSession = "local_61dd7372-e5bf-4302-82d5-c3bd2fc55844" }, TimeSpan.Zero, CancellationToken.None);
+        var cats = Cats(s);
+        Assert.Null(s.DesktopLinkOf(cats[0].Id)); // терминал — без ссылки, поднимаем окно
+        Assert.Equal("claude://code/continue?session=local_61dd7372-e5bf-4302-82d5-c3bd2fc55844", s.DesktopLinkOf(cats[1].Id));
+        Assert.True(ClaudeSessions.IsDesktopSessionId("local_abc-123"));
+        Assert.False(ClaudeSessions.IsDesktopSessionId("local_a&b"));
+        Assert.False(ClaudeSessions.IsDesktopSessionId("6e2c3d1a-0000"));
+        Assert.False(ClaudeSessions.IsDesktopSessionId(""));
+    }
+
+    [Fact]
     public async Task SilentSessionsAreForgotten()
     {
         var s = new ClaudeSessions();

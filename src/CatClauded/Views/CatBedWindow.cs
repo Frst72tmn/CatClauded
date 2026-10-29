@@ -98,9 +98,9 @@ public sealed class CatBedWindow : Overlay
 
     private static string Tip(CatInfo c) => c.State switch
     {
-        CatState.Asking => $"{c.Title}\n{c.Origin.Label} — ждёт вас, щелчок откроет окно",
-        CatState.Working => $"{c.Title}\n{c.Origin.Label} — работает",
-        CatState.Finished => $"{c.Title}\n{c.Origin.Label} — закончил",
-        _ => $"{c.Title}\n{c.Origin.Label} — ждёт задачу",
+        CatState.Asking => $"{c.Title}\n{c.Origin.Label} — ждёт вас\nЩелчок откроет сессию",
+        CatState.Working => $"{c.Title}\n{c.Origin.Label} — работает\nЩелчок откроет сессию",
+        CatState.Finished => $"{c.Title}\n{c.Origin.Label} — закончил\nЩелчок откроет сессию",
+        _ => $"{c.Title}\n{c.Origin.Label} — ждёт задачу\nЩелчок откроет сессию",
     };
 }

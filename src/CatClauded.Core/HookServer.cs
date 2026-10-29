@@ -21,6 +21,8 @@ public static class Hook
     public const string EntryHeader = "X-CatClauded-Entry";
     /// <summary>$MWA_AGENT: сессии агентов MyWorkAssist — у него свои коты, здесь их не показываем.</summary>
     public const string AgentHeader = "X-CatClauded-Agent";
+    /// <summary>$CLAUDE_CODE_HOST_SESSION_ID: id сессии в десктопе Claude (local_…) — по нему щелчок по коту открывает именно её.</summary>
+    public const string DesktopSessionHeader = "X-CatClauded-Desktop-Session";
 
     /// <summary>Сколько ждать кнопку у кота; хук в settings.json ждёт дольше (HookTimeoutSeconds), чтобы ответ успел дойти.</summary>
     public static readonly TimeSpan MaxWait = TimeSpan.FromMinutes(55);
@@ -100,10 +102,11 @@ public sealed class HookServer(ClaudeSessions sessions, Func<CatSettings> settin
             "cli" or "sdk-cli" => ClaudeSource.Terminal,
             _ => owner?.Source ?? ClaudeSource.Terminal,
         };
-        var call = new ClaudeHookCall(body, new ClaudeOrigin(source, os, h[Hook.HostHeader].ToString()), owner);
+        var desktopSession = h[Hook.DesktopSessionHeader].ToString() is var d && ClaudeSessions.IsDesktopSessionId(d) ? d : null;
+        var call = new ClaudeHookCall(body, new ClaudeOrigin(source, os, h[Hook.HostHeader].ToString()), owner, desktopSession);
 
         if (call.Event is "SessionStart" or "SessionEnd" or "PermissionRequest")
-            Log.Write($"{call.Event} · {call.Origin.Label} · pid {owner?.Pid}");
+            Log.Write($"{call.Event} · {call.Origin.Label} · pid {owner?.Pid}" + (desktopSession is null ? "" : " · " + desktopSession));
         // Ждать кнопку можно, только если кот с кнопками появится: коты и прыжки включены, эта сессия не скрыта.
         // Иначе решает сам Claude — не держим его, пока никто не может ответить.
         var canAsk = s.Enabled && s.Jump && s.Shows(call.Origin);

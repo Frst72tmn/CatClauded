@@ -170,7 +170,7 @@ public sealed class CatAskWindow : Overlay
         var row = new DockPanel { LastChildFill = false };
         var later = Link("Напомнить позже ▾", "Сейчас ничего не делать — кот вернётся через выбранное время");
         DockPanel.SetDock(later, Dock.Right);
-        var open = Link("Открыть окно", "Поднять окно этой сессии Claude");
+        var open = Link("Открыть сессию", "Открыть эту сессию: в десктопе Claude — её саму, у терминала — его окно");
         open.Margin = new Thickness(0, 8, 0, 0);
         open.PointerPressed += (_, e) => { e.Handled = true; OpenRequested?.Invoke(this); };
         row.Children.Add(open);

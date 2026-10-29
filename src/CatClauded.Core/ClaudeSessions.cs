@@ -30,8 +30,8 @@ public sealed record ClaudeOrigin(ClaudeSource Source, ClaudeOs Os, string Host 
 /// </summary>
 public sealed record ProcessOwner(int? Pid, nint Window, ClaudeSource? Source, IReadOnlyList<int> Chain);
 
-/// <summary>Один вызов хука: тело от Claude Code, откуда пришло и кто прислал.</summary>
-public sealed record ClaudeHookCall(JsonElement Body, ClaudeOrigin Origin, ProcessOwner? Owner = null)
+/// <summary>Один вызов хука: тело от Claude Code, откуда пришло и кто прислал. DesktopSession — id сессии в десктопе Claude (local_…).</summary>
+public sealed record ClaudeHookCall(JsonElement Body, ClaudeOrigin Origin, ProcessOwner? Owner = null, string? DesktopSession = null)
 {
     public string Event => Str(Body, "hook_event_name");
     public string SessionId => Str(Body, "session_id");
@@ -74,6 +74,7 @@ public sealed class ClaudeSessions(Func<int, bool>? isAlive = null)
         public DateTimeOffset LastUtc { get; set; }
         public DateTimeOffset? FinishedUtc { get; set; }
         public ProcessOwner? Owner { get; set; }
+        public string? DesktopSession { get; set; }
         public Pending? Permission { get; set; }
         public CatAsk? Waiting { get; set; }
     }
@@ -102,6 +103,7 @@ public sealed class ClaudeSessions(Func<int, bool>? isAlive = null)
             s.Origin = call.Origin;
             s.LastUtc = at;
             if (call.Owner is { } owner) s.Owner = owner;
+            if (call.DesktopSession is { } desktop) s.DesktopSession = desktop;
             if (ClaudeHookCall.Str(call.Body, "cwd") is { Length: > 0 } cwd) s.Cwd = cwd;
             if (ClaudeHookCall.Str(call.Body, "session_title") is { Length: > 0 } title) s.Title = Short(title, 60);
 
@@ -184,6 +186,17 @@ public sealed class ClaudeSessions(Func<int, bool>? isAlive = null)
         lock (_gate)
             return _sessions.Values.FirstOrDefault(s => s.CatId == catId)?.Owner;
     }
+
+    /// <summary>Ссылка, открывающая сессию кота в десктопе Claude; null — сессия не из десктопа.</summary>
+    public string? DesktopLinkOf(long catId)
+    {
+        lock (_gate)
+            return _sessions.Values.FirstOrDefault(s => s.CatId == catId)?.DesktopSession is { } id
+                ? "claude://code/continue?session=" + Uri.EscapeDataString(id) : null;
+    }
+
+    /// <summary>Id сессии десктопа Claude: local_ и не больше 64 букв, цифр и дефисов — то же, что принимает сам десктоп.</summary>
+    public static bool IsDesktopSessionId(string id) => System.Text.RegularExpressions.Regex.IsMatch(id, "^local_[A-Za-z0-9-]{1,64}$");
 
     /// <summary>Коты сессий; show — каких показывать (по настройкам).</summary>
     public IReadOnlyList<CatInfo> Cats(Func<ClaudeOrigin, bool> show, bool callWhenIdle, DateTimeOffset? now = null)

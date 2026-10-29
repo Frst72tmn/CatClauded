@@ -88,6 +88,22 @@ public class HookServerTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task DesktopSessionHeaderIsKeptOnlyWhenValid()
+    {
+        foreach (var (session, id) in new[] { ("a", "local_0123-abcd"), ("b", "local_bad id; rm -rf") })
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, Hook.Url(_settings.Port)) { Content = new StringContent(ClaudeSessionsTests.Ev("SessionStart", session: session), Encoding.UTF8, "application/json") };
+            request.Headers.Add(Hook.TokenHeader, "tok");
+            request.Headers.Add(Hook.EntryHeader, "claude-desktop");
+            request.Headers.TryAddWithoutValidation(Hook.DesktopSessionHeader, id);
+            await _http.SendAsync(request);
+        }
+        var cats = _sessions.Cats(_ => true, true);
+        Assert.Equal("claude://code/continue?session=local_0123-abcd", _sessions.DesktopLinkOf(cats[0].Id));
+        Assert.Null(_sessions.DesktopLinkOf(cats[1].Id));
+    }
+
+    [Fact]
     public async Task MyWorkAssistAgentsGetNoCats()
     {
         var request = new HttpRequestMessage(HttpMethod.Post, Hook.Url(_settings.Port))

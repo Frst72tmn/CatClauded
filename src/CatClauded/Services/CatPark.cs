@@ -195,8 +195,25 @@ public sealed class CatPark(ClaudeSessions sessions, SettingsStore settings, IPr
     private void Open(CatInfo cat)
     {
         if (cat.Ask is { IsQuestion: true }) sessions.Seen(cat.Id);
+        // Сессия десктопа Claude — открываем её саму ссылкой claude://; терминал — поднимаем его окно.
+        if (sessions.DesktopLinkOf(cat.Id) is { } link && OpenLink(link)) return;
         var ok = probe is not null && sessions.OwnerOf(cat.Id) is { } owner && probe.Focus(owner);
         if (!ok) Log.Write($"Окно сессии «{cat.Title}» не поднять" + (OperatingSystem.IsLinux() ? " (нужен xdotool или wmctrl, X11)" : ""));
+    }
+
+    private static bool OpenLink(string link)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(link) { UseShellExecute = true })?.Dispose();
+            Log.Write("Открываю сессию: " + link);
+            return true;
+        }
+        catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            Log.Write($"Ссылку {link} не открыть: {e.Message}");
+            return false;
+        }
     }
 
     private static string AskKey(CatInfo c) => $"{c.Id}:{c.Ask?.AskId}:{c.Ask?.Title}";

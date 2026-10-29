@@ -100,8 +100,9 @@ public static class HookInstaller
                     {
                         [Marker] = token, [Hook.OsHeader] = os, [Hook.HostHeader] = host, [Hook.EntryHeader] = "$CLAUDE_CODE_ENTRYPOINT",
                         [Hook.AgentHeader] = "$MWA_AGENT",
+                        [Hook.DesktopSessionHeader] = "$CLAUDE_CODE_HOST_SESSION_ID",
                     },
-                    ["allowedEnvVars"] = new JsonArray("CLAUDE_CODE_ENTRYPOINT", "MWA_AGENT"),
+                    ["allowedEnvVars"] = new JsonArray("CLAUDE_CODE_ENTRYPOINT", "MWA_AGENT", "CLAUDE_CODE_HOST_SESSION_ID"),
                 };
             result[e] = new JsonArray(new JsonObject { ["hooks"] = new JsonArray(hook) });
         }

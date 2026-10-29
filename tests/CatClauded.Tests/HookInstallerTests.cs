@@ -57,6 +57,8 @@ public class HookInstallerTests : IDisposable
         Assert.Equal("CLAUDE_CODE_ENTRYPOINT", permission["allowedEnvVars"]![0]!.GetValue<string>());
         Assert.Equal("$MWA_AGENT", permission["headers"]!["X-CatClauded-Agent"]!.GetValue<string>());
         Assert.Equal("MWA_AGENT", permission["allowedEnvVars"]![1]!.GetValue<string>());
+        Assert.Equal("$CLAUDE_CODE_HOST_SESSION_ID", permission["headers"]!["X-CatClauded-Desktop-Session"]!.GetValue<string>());
+        Assert.Equal("CLAUDE_CODE_HOST_SESSION_ID", permission["allowedEnvVars"]![2]!.GetValue<string>());
         Assert.Equal(10, hooks["Stop"]![0]!["hooks"]![0]!["timeout"]!.GetValue<int>());
     }
 
