@@ -73,6 +73,14 @@ public static class Screens
         return r.Left <= m.Left && r.Top <= m.Top && r.Right >= m.Right && r.Bottom >= m.Bottom;
     }
 
+    /// <summary>Курсор в пикселях экрана (Windows); null — на других системах.</summary>
+    public static PixelPoint? Cursor() =>
+        OperatingSystem.IsWindows() && GetCursorPos(out var p) ? new PixelPoint(p.X, p.Y) : null;
+
+    /// <summary>Основная кнопка мыши зажата прямо сейчас (Windows; учитывает «поменять кнопки местами»).</summary>
+    public static bool IsLeftButtonDown() =>
+        OperatingSystem.IsWindows() && (GetAsyncKeyState(GetSystemMetrics(23 /* SM_SWAPBUTTON */) != 0 ? 0x02 : 0x01) & 0x8000) != 0;
+
     /// <summary>Середина активного окна; null — не узнать.</summary>
     private static PixelPoint? ForegroundCenter()
     {
@@ -108,6 +116,8 @@ public static class Screens
     [DllImport("user32.dll")] private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint flags);
     [DllImport("user32.dll")] private static extern bool GetMonitorInfo(IntPtr monitor, ref MONITORINFO info);
     [DllImport("user32.dll")] private static extern bool GetCursorPos(out POINT pt);
+    [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int key);
+    [DllImport("user32.dll")] private static extern int GetSystemMetrics(int index);
     [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
     [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
     [DllImport("user32.dll")] private static extern IntPtr GetWindowLongPtr(IntPtr hwnd, int index);

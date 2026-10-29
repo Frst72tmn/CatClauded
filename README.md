@@ -15,11 +15,11 @@
 **Linux (x64).**
 
 ```bash
-tar -xzf CatClauded-0.1.2-linux-x64.tar.gz
+tar -xzf CatClauded-0.1.3-linux-x64.tar.gz
 ```
 
 ```bash
-./CatClauded-0.1.2/CatClauded &
+./CatClauded-0.1.3/CatClauded &
 ```
 
 Нужны X11 с композитором (для прозрачности) и трей с поддержкой StatusNotifierItem (KDE, Xfce, Cinnamon;

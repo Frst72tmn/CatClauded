@@ -146,7 +146,7 @@ public sealed class CatPark(ClaudeSessions sessions, SettingsStore settings, IPr
             x = Math.Max(area.X, area.Right - size.Width - (int)(420 * bed.DesktopScaling));
             y = area.Bottom - size.Height;
         }
-        bed.Position = new PixelPoint(x, y);
+        if (!bed.IsDragging) bed.Position = new PixelPoint(x, y);
     }
 
     // ───────────── Просящие ─────────────
@@ -274,7 +274,7 @@ public sealed class CatPark(ClaudeSessions sessions, SettingsStore settings, IPr
             var x = Math.Clamp(corner.X - i * step - size.Width, area.X, Math.Max(area.X, area.Right - size.Width));
             var y = Math.Clamp(corner.Y - i * step / 4 - size.Height, area.Y, Math.Max(area.Y, area.Bottom - size.Height));
             var p = new PixelPoint(x, y);
-            if (w.Position != p) w.Position = p;
+            if (w.Position != p && !w.IsDragging) w.Position = p;
         }
         // Задние — под передним.
         for (var i = _queue.Count - 1; i >= 0; i--) Screens.BringTop(_out[_queue[i]]);

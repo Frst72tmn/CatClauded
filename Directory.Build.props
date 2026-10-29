@@ -4,7 +4,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <Version>0.1.2</Version>
+    <Version>0.1.3</Version>
     <Product>CatClauded</Product>
     <Company>CatClauded</Company>
     <InvariantGlobalization>false</InvariantGlobalization>
