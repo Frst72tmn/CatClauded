@@ -55,6 +55,8 @@ public class HookInstallerTests : IDisposable
         Assert.Equal("secret", permission["headers"]!["X-CatClauded-Token"]!.GetValue<string>());
         Assert.Equal("$CLAUDE_CODE_ENTRYPOINT", permission["headers"]!["X-CatClauded-Entry"]!.GetValue<string>());
         Assert.Equal("CLAUDE_CODE_ENTRYPOINT", permission["allowedEnvVars"]![0]!.GetValue<string>());
+        Assert.Equal("$MWA_AGENT", permission["headers"]!["X-CatClauded-Agent"]!.GetValue<string>());
+        Assert.Equal("MWA_AGENT", permission["allowedEnvVars"]![1]!.GetValue<string>());
         Assert.Equal(10, hooks["Stop"]![0]!["hooks"]![0]!["timeout"]!.GetValue<int>());
     }
 
@@ -70,6 +72,7 @@ public class HookInstallerTests : IDisposable
         Assert.Contains("X-CatClauded-Token: secret", command);
         Assert.Contains("X-CatClauded-OS: linux", command);
         Assert.Contains("X-CatClauded-Host: devbox", command);
+        Assert.Contains("X-CatClauded-Agent: $MWA_AGENT", command);
 
         var wsl = HookInstaller.HooksFor("linux", "@HOST@", 47322, "secret", wsl: true)["PermissionRequest"]![0]!["hooks"]![0]!["command"]!.GetValue<string>();
         Assert.StartsWith("/mnt/c/Windows/System32/curl.exe -s -m 3600 ", wsl);

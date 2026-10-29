@@ -19,6 +19,8 @@ public static class Hook
     public const string HostHeader = "X-CatClauded-Host";
     /// <summary>$CLAUDE_CODE_ENTRYPOINT: claude-desktop — десктоп, cli и sdk-cli — терминал.</summary>
     public const string EntryHeader = "X-CatClauded-Entry";
+    /// <summary>$MWA_AGENT: сессии агентов MyWorkAssist — у него свои коты, здесь их не показываем.</summary>
+    public const string AgentHeader = "X-CatClauded-Agent";
 
     /// <summary>Сколько ждать кнопку у кота; хук в settings.json ждёт дольше (HookTimeoutSeconds), чтобы ответ успел дойти.</summary>
     public static readonly TimeSpan MaxWait = TimeSpan.FromMinutes(55);
@@ -73,7 +75,7 @@ public sealed class HookServer(ClaudeSessions sessions, Func<CatSettings> settin
             http.Response.StatusCode = StatusCodes.Status401Unauthorized;
             return;
         }
-        if (!s.Enabled) return;
+        if (!s.Enabled || h[Hook.AgentHeader].ToString().Length > 0) return;
 
         JsonElement body;
         try { body = (await JsonDocument.ParseAsync(http.Request.Body, cancellationToken: http.RequestAborted)).RootElement.Clone(); }

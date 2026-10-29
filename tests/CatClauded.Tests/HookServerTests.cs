@@ -88,6 +88,19 @@ public class HookServerTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task MyWorkAssistAgentsGetNoCats()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, Hook.Url(_settings.Port))
+            { Content = new StringContent(ClaudeSessionsTests.Ev("PermissionRequest", ""","tool_name":"Bash","tool_input":{"command":"ls"}"""), Encoding.UTF8, "application/json") };
+        request.Headers.Add(Hook.TokenHeader, "tok");
+        request.Headers.Add(Hook.AgentHeader, "1");
+        var r = await _http.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, r.StatusCode);
+        Assert.Equal("", await r.Content.ReadAsStringAsync());
+        Assert.Empty(_sessions.Cats(_ => true, true));
+    }
+
+    [Fact]
     public async Task NoJumpMeansClaudeDecidesAtOnce()
     {
         _settings.Jump = false;

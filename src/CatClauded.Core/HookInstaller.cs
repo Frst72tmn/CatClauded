@@ -99,8 +99,9 @@ public static class HookInstaller
                     ["headers"] = new JsonObject
                     {
                         [Marker] = token, [Hook.OsHeader] = os, [Hook.HostHeader] = host, [Hook.EntryHeader] = "$CLAUDE_CODE_ENTRYPOINT",
+                        [Hook.AgentHeader] = "$MWA_AGENT",
                     },
-                    ["allowedEnvVars"] = new JsonArray("CLAUDE_CODE_ENTRYPOINT"),
+                    ["allowedEnvVars"] = new JsonArray("CLAUDE_CODE_ENTRYPOINT", "MWA_AGENT"),
                 };
             result[e] = new JsonArray(new JsonObject { ["hooks"] = new JsonArray(hook) });
         }
@@ -109,7 +110,7 @@ public static class HookInstaller
 
     private static string CurlCommand(int timeout, string curl, string os, string host, int port, string token) =>
         $"{curl} -s -m {timeout} --data-binary @- -H \"Content-Type: application/json\" -H \"{Marker}: {token}\" -H \"{Hook.OsHeader}: {os}\" -H \"{Hook.HostHeader}: {host}\" " +
-        $"-H \"{Hook.EntryHeader}: $CLAUDE_CODE_ENTRYPOINT\" {Hook.Url(port)} || true";
+        $"-H \"{Hook.EntryHeader}: $CLAUDE_CODE_ENTRYPOINT\" -H \"{Hook.AgentHeader}: $MWA_AGENT\" {Hook.Url(port)} || true";
 
     /// <summary>
     /// Команда для терминала WSL или удалённого Linux: дописывает (remove — убирает) наши хуки в ~/.claude/settings.json там.
