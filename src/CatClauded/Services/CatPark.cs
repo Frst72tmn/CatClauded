@@ -118,6 +118,7 @@ public sealed class CatPark(ClaudeSessions sessions, SettingsStore settings, IPr
             _bed = new CatBedWindow();
             _bed.Moved += p => settings.Update(s => { s.BedX = p.X; s.BedY = p.Y; });
             _bed.CatClicked += Open;
+            _bed.CatHidden += Hide;
             _bed.SizeChanged += (_, _) => { if (Cats.BedX is null) PlaceBed(); };
         }
         _bed.SetCats(cats, Scale);
@@ -166,6 +167,7 @@ public sealed class CatPark(ClaudeSessions sessions, SettingsStore settings, IPr
             Refresh();
         };
         w.OpenRequested += win => Open(win.Cat);
+        w.HideRequested += win => Hide(win.Cat);
         w.Dragged += OnDragged;
         w.Clicked += win => { if (_queue.Remove(win.Cat.Id)) _queue.Insert(0, win.Cat.Id); Arrange(); };
         w.Wheel += (_, delta) => Rotate(delta);
@@ -192,6 +194,14 @@ public sealed class CatPark(ClaudeSessions sessions, SettingsStore settings, IPr
     }
 
     /// <summary>Щелчок по коту или «Открыть окно»: поднять окно терминала или десктопа Claude.</summary>
+    /// <summary>ПКМ → «Скрыть до новой сессии»: кот уходит, пока сессия не запустится заново.</summary>
+    private void Hide(CatInfo cat)
+    {
+        Log.Write($"Кот «{cat.Title}» скрыт до новой сессии");
+        sessions.Hide(cat.Id);
+        Refresh();
+    }
+
     private void Open(CatInfo cat)
     {
         if (cat.Ask is { IsQuestion: true }) sessions.Seen(cat.Id);

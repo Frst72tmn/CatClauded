@@ -33,6 +33,8 @@ public sealed class CatAskWindow : Overlay
     public event Action<CatAskWindow, long, bool>? Decided;
     public event Action<CatAskWindow, long>? Always;
     public event Action<CatAskWindow>? OpenRequested;
+    /// <summary>ПКМ → «Скрыть до новой сессии».</summary>
+    public event Action<CatAskWindow>? HideRequested;
     public event Action<CatAskWindow, int>? Wheel;
     /// <summary>«Напомнить позже»: кот уходит на лежанку и вернётся через указанное время.</summary>
     public event Action<CatAskWindow, TimeSpan>? Snoozed;
@@ -65,7 +67,11 @@ public sealed class CatAskWindow : Overlay
         };
         _root.Children.Add(_bubble);
         _root.Children.Add(_tail);
-        _root.Children.Add(new CatView(cat.Coat, CatState.Asking) { HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, 8, 0), Cursor = new Cursor(StandardCursorType.SizeAll) });
+        _root.Children.Add(new CatView(cat.Coat, CatState.Asking)
+        {
+            HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 0, 8, 0), Cursor = new Cursor(StandardCursorType.SizeAll),
+            ContextMenu = CatMenu.For(() => OpenRequested?.Invoke(this), () => HideRequested?.Invoke(this)),
+        });
         _root.Children.Add(NameTag($"{cat.Origin.Badge}  {cat.Title}", cat.Origin.Label));
         _root.RenderTransform = _jump;
         Content = new LayoutTransformControl { LayoutTransform = _scale, Child = _root };

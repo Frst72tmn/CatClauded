@@ -24,6 +24,9 @@ public sealed class CatBedWindow : Overlay
     /// <summary>Щелчок по коту.</summary>
     public event Action<CatInfo>? CatClicked;
 
+    /// <summary>ПКМ → «Скрыть до новой сессии».</summary>
+    public event Action<CatInfo>? CatHidden;
+
     public CatBedWindow()
     {
         Title = "CatClauded — лежанка";
@@ -70,9 +73,10 @@ public sealed class CatBedWindow : Overlay
         foreach (var c in cats) _cats.Children.Add(Cat(c));
     }
 
-    private static Control Cat(CatInfo c)
+    private Control Cat(CatInfo c)
     {
         var grid = new Grid { Tag = c, Cursor = new Cursor(StandardCursorType.Hand), Margin = new Thickness(-2, 0), VerticalAlignment = VerticalAlignment.Bottom, Background = Brushes.Transparent };
+        grid.ContextMenu = CatMenu.For(() => CatClicked?.Invoke(c), () => CatHidden?.Invoke(c));
         ToolTip.SetTip(grid, Tip(c));
         grid.Children.Add(new CatView(c.Coat, c.State));
         // Значок, откуда кот: «▣» десктоп, «›_» терминал, 🐧 Linux/WSL.

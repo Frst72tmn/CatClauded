@@ -177,6 +177,43 @@ public class ClaudeSessionsTests
     }
 
     [Fact]
+    public async Task HiddenCatStaysAwayUntilSessionRestarts()
+    {
+        var s = new ClaudeSessions();
+        var pending = s.HandleAsync(Call(Ev("PermissionRequest", ""","tool_name":"Bash","tool_input":{"command":"ls"}""")), TimeSpan.FromSeconds(10), CancellationToken.None);
+        var cat = Assert.Single(Cats(s));
+        s.Hide(cat.Id);
+        Assert.Null(await pending); // ждавший кнопку хук отпущен — решает сам Claude
+        Assert.Empty(Cats(s));
+        Assert.Equal(1, s.HiddenCount);
+
+        // Скрытый не ждёт кнопку и не зовёт.
+        Assert.Null(await s.HandleAsync(Call(Ev("PermissionRequest", ""","tool_name":"Bash","tool_input":{"command":"ls"}""")), TimeSpan.FromSeconds(10), CancellationToken.None));
+        await s.HandleAsync(Call(Ev("Notification", ""","notification_type":"idle_prompt" """)), TimeSpan.Zero, CancellationToken.None);
+        await s.HandleAsync(Call(Ev("UserPromptSubmit")), TimeSpan.Zero, CancellationToken.None);
+        Assert.Empty(Cats(s));
+
+        // Другие сессии видны; эта вернётся, когда запустится заново.
+        await s.HandleAsync(Call(Ev("SessionStart", session: "other")), TimeSpan.Zero, CancellationToken.None);
+        Assert.Single(Cats(s));
+        await s.HandleAsync(Call(Ev("SessionStart")), TimeSpan.Zero, CancellationToken.None);
+        Assert.Equal(2, Cats(s).Count);
+        Assert.Null(Cats(s)[0].Ask);
+    }
+
+    [Fact]
+    public async Task ShowHiddenBringsCatsBack()
+    {
+        var s = new ClaudeSessions();
+        await s.HandleAsync(Call(Ev("SessionStart")), TimeSpan.Zero, CancellationToken.None);
+        s.Hide(Cats(s)[0].Id);
+        Assert.Empty(Cats(s));
+        s.ShowHidden();
+        Assert.Single(Cats(s));
+        Assert.Equal(0, s.HiddenCount);
+    }
+
+    [Fact]
     public async Task SilentSessionsAreForgotten()
     {
         var s = new ClaudeSessions();

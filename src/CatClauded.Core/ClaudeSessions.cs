@@ -77,6 +77,8 @@ public sealed class ClaudeSessions(Func<int, bool>? isAlive = null)
         public string? DesktopSession { get; set; }
         public Pending? Permission { get; set; }
         public CatAsk? Waiting { get; set; }
+        /// <summary>«Скрыть до новой сессии»: кота нет, на запросы разрешения отвечает сам Claude.</summary>
+        public bool Hidden { get; set; }
     }
 
     private sealed record Pending(long Id, CatAsk Ask, JsonElement? Suggestions)
@@ -110,6 +112,8 @@ public sealed class ClaudeSessions(Func<int, bool>? isAlive = null)
             switch (call.Event)
             {
                 case "SessionStart":
+                    // Сессию запустили заново (новая или продолженная) — скрытый кот возвращается.
+                    s.Hidden = false;
                     s.State = CatState.Sleeping;
                     break;
                 case "UserPromptSubmit":
@@ -121,6 +125,7 @@ public sealed class ClaudeSessions(Func<int, bool>? isAlive = null)
                 case "PermissionRequest":
                     Release(s);
                     s.Waiting = null;
+                    if (s.Hidden) break; // кот скрыт — спрашивает сам Claude
                     var id = ++_nextAsk;
                     var (what, detail) = Describe(call.Body);
                     var suggestions = call.Body.TryGetProperty("permission_suggestions", out var sg) && sg.ValueKind == JsonValueKind.Array && sg.GetArrayLength() > 0
@@ -135,7 +140,7 @@ public sealed class ClaudeSessions(Func<int, bool>? isAlive = null)
                     break;
                 case "Notification":
                     var type = ClaudeHookCall.Str(call.Body, "notification_type");
-                    if (type is "idle_prompt" or "agent_needs_input" or "elicitation_dialog" && s.Permission is null)
+                    if (type is "idle_prompt" or "agent_needs_input" or "elicitation_dialog" && s.Permission is null && !s.Hidden)
                         s.Waiting = new CatAsk(null, "Claude ждёт вас: " + (ClaudeHookCall.Str(call.Body, "message") is { Length: > 0 } m ? Short(m, 300) : "нужен ваш ответ"), "", false, at);
                     break;
                 case "Stop" or "StopFailure":
@@ -171,6 +176,36 @@ public sealed class ClaudeSessions(Func<int, bool>? isAlive = null)
 
     /// <summary>«Всегда»: разрешить и добавить правило, которое предложил сам Claude Code.</summary>
     public bool DecideAlways(long askId) => Resolve(askId, p => Decision("allow", p.Suggestions));
+
+    /// <summary>
+    /// «Скрыть до новой сессии»: кот уходит с экрана и с лежанки. Если он ждал кнопку — решает сам Claude.
+    /// Вернётся, когда сессия запустится заново (SessionStart) или по «Показать скрытых котов».
+    /// </summary>
+    public void Hide(long catId)
+    {
+        lock (_gate)
+            foreach (var s in _sessions.Values.Where(s => s.CatId == catId))
+            {
+                Release(s);
+                s.Waiting = null;
+                s.Hidden = true;
+            }
+        Changed?.Invoke();
+    }
+
+    /// <summary>Сколько котов скрыто.</summary>
+    public int HiddenCount
+    {
+        get { lock (_gate) return _sessions.Values.Count(s => s.Hidden); }
+    }
+
+    /// <summary>Вернуть всех скрытых котов.</summary>
+    public void ShowHidden()
+    {
+        lock (_gate)
+            foreach (var s in _sessions.Values) s.Hidden = false;
+        Changed?.Invoke();
+    }
 
     /// <summary>Открыли сессию — «Claude ждёт вас» снимается.</summary>
     public void Seen(long catId)
@@ -208,7 +243,7 @@ public sealed class ClaudeSessions(Func<int, bool>? isAlive = null)
                          || s.Owner?.Pid is { } pid && isAlive is not null && !isAlive(pid))).ToList())
                 _sessions.Remove(dead.Id);
 
-            return _sessions.Values.Where(s => show(s.Origin)).OrderBy(s => s.CatId).Select(s =>
+            return _sessions.Values.Where(s => !s.Hidden && show(s.Origin)).OrderBy(s => s.CatId).Select(s =>
             {
                 var ask = s.Permission?.Ask ?? (callWhenIdle ? s.Waiting : null);
                 var state = ask is not null ? CatState.Asking

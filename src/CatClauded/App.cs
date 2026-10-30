@@ -63,6 +63,7 @@ public sealed class App : Application
         menu.Items.Add(Item("Подключить к Claude Code", () => _ = InstallAsync()));
         menu.Items.Add(Item("Отключить", () => _ = UninstallAsync()));
         menu.Items.Add(new NativeMenuItemSeparator());
+        menu.Items.Add(Item("Показать скрытых котов", () => Sessions.ShowHidden()));
         menu.Items.Add(Item("Настройки", ShowSettings));
         menu.Items.Add(new NativeMenuItemSeparator());
         menu.Items.Add(Item("Выход", () => desktop.Shutdown()));
